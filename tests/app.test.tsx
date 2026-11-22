@@ -1,4 +1,4 @@
-import {test} from 'node:test';
+import {test,afterEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import {indexedDB} from 'fake-indexeddb';
@@ -21,6 +21,7 @@ globalThis.fetch=async (input:any)=>{const u=String(input);return new Response(J
 const {render,screen,waitFor,cleanup,within}=await import('@testing-library/react');
 const {default:userEvent}=await import('@testing-library/user-event');
 const {default:App}=await import('../src/App');
+afterEach(()=>cleanup());
 test('real user flow: search, playback, next track, favorites, playlist and persisted library',async()=>{
  const user=userEvent.setup({document:dom.window.document});render(<App/>);
  await waitFor(()=>assert.ok(screen.getAllByRole('button',{name:'Слушать First song'})[0]));
@@ -46,7 +47,7 @@ test('real user flow: search, playback, next track, favorites, playlist and pers
  await user.click(document.querySelector('.now-playing')!);
  assert.ok(screen.getByRole('dialog',{name:'Сейчас играет'}));
  await user.click(screen.getByRole('button',{name:'Свернуть плеер'}));
- cleanup();render(<App/>);assert.ok(screen.getByRole('button',{name:/Night drive.*1 треков/}));
+ cleanup();render(<App/>);assert.ok(screen.getByRole('button',{name:/Night drive.*1 трек/}));
  cleanup();
 });
 test('offline local audio is durable in IndexedDB and removable',async()=>{
