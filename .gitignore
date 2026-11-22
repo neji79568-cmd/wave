@@ -4,3 +4,4 @@ dist/
 .site-state/
 .env*
 qa/
+*.tsbuildinfo

@@ -35,4 +35,4 @@ try{
  await page.waitForFunction(()=>{const a=document.querySelector('audio');return a&&!a.paused&&a.currentTime>0;},{timeout:10000});
  assert.equal(errors.length,0,errors.join('\n'));
  const report={desktop:1440,iphone:393,realAudiusPlayback:realPlayback,offlineReload:true,offlineFilePlayback:true,overflow:false,pageErrors:errors};console.log(JSON.stringify(report));await writeFile('qa/report.json',JSON.stringify(report,null,2));
-}catch(e){console.log('Browser failure state:',await page.locator('body').innerText());console.log('Page errors:',errors);await page.screenshot({path:'qa/failure.png',fullPage:true});throw e;}finally{await browser.close();}
+}catch(e){console.log('Browser failure state:',await page.content());console.log('Page errors:',errors);await page.screenshot({path:'qa/failure.png',fullPage:true});throw e;}finally{await browser.close();}
