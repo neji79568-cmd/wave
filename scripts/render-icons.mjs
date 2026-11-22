@@ -1,0 +1,4 @@
+import {chromium} from '@playwright/test';
+import {readFile,writeFile} from 'node:fs/promises';
+const browser=await chromium.launch({executablePath:'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true});
+try{const page=await browser.newPage(),svg=await readFile('public/icon.svg','utf8');for(const size of [192,512]){const data=await page.evaluate(async({svg,size})=>{const image=new Image();image.src='data:image/svg+xml;base64,'+btoa(svg);await image.decode();const canvas=document.createElement('canvas');canvas.width=canvas.height=size;canvas.getContext('2d').drawImage(image,0,0,size,size);return canvas.toDataURL('image/png').split(',')[1];},{svg,size});await writeFile(`public/icon-${size}.png`,Buffer.from(data,'base64'));}console.log('Rendered note logo at 192 and 512 px');}finally{await browser.close();}

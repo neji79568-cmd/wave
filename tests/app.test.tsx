@@ -55,3 +55,27 @@ test('offline local audio is durable in IndexedDB and removable',async()=>{
  await putFile('offline-test',file);const saved=await getFile('offline-test');assert.ok(saved);assert.equal(await saved.text(),'ID3 audio bytes');
  await deleteFile('offline-test');assert.equal(await getFile('offline-test'),undefined);
 });
+test('library portals filter collections, play favorites and search playlists',async()=>{
+ localStorage.clear();
+ const track={id:'au:saved',title:'My saved track',artist:'My artist',duration:180,source:'audius',url:'https://example.com/audio.mp3',artwork:'',available:true};
+ localStorage.setItem('volna.likes',JSON.stringify([track]));
+ localStorage.setItem('volna.history',JSON.stringify([track]));
+ localStorage.setItem('volna.playlists',JSON.stringify([{id:'night',name:'Ночной город',tracks:[track]}]));
+ const user=userEvent.setup({document:dom.window.document});render(<App/>);
+ await user.click(screen.getByRole('button',{name:'Моя библиотека',exact:true}));
+ assert.ok(screen.getByRole('heading',{name:'Моя библиотека.'}));
+ await user.click(screen.getByRole('button',{name:'Избранное',exact:true}));
+ assert.equal(document.querySelectorAll('.library-portal').length,1);
+ await user.click(screen.getByRole('button',{name:'Включить микс'}));
+ await waitFor(()=>assert.equal(document.querySelector('.now-playing strong')?.textContent,'My saved track'));
+ await user.click(screen.getByRole('button',{name:'На устройстве'}));
+ assert.equal(document.querySelectorAll('.library-portal').length,1);
+ await user.click(screen.getByRole('button',{name:'Мои файлы',exact:true}));
+ assert.ok(screen.getByRole('heading',{name:'Мои файлы'}));
+ await user.click(screen.getByRole('button',{name:'Моя библиотека',exact:true}));
+ await user.type(screen.getByRole('textbox',{name:'Поиск в библиотеке'}),'Ночной');
+ assert.equal(document.querySelectorAll('.library-portal').length,1);
+ await user.click(screen.getByRole('button',{name:'Открыть плейлист Ночной город'}));
+ assert.ok(screen.getByRole('heading',{name:'Ночной город'}));
+ cleanup();
+});

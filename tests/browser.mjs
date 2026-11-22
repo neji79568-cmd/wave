@@ -39,6 +39,15 @@ try{
  assert.equal(await page.locator('.album-front').evaluate(el=>getComputedStyle(el).animationName),'none');
  await page.emulateMedia({reducedMotion:'no-preference'});
  await page.locator('.mobile-nav').getByRole('button',{name:'Библиотека'}).click();
+ await page.setViewportSize({width:1440,height:1000});await page.evaluate(()=>scrollTo(0,0));await page.waitForTimeout(700);
+ assert.equal(await page.locator('.library-portals .library-portal').count(),3);
+ await page.screenshot({path:'qa/library-desktop.png',fullPage:false});
+ await page.locator('.library-filters').getByRole('button',{name:'Избранное',exact:true}).click();
+ assert.equal(await page.locator('.library-portals .library-portal').count(),1);
+ await page.locator('.library-filters').getByRole('button',{name:'Всё',exact:true}).click();
+ await page.setViewportSize({width:393,height:852});await page.waitForTimeout(350);
+ await page.screenshot({path:'qa/library-mobile.png',fullPage:true});
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.getByRole('button',{name:/Мои файлы/}).filter({visible:true}).click();
  const rate=8000,n=rate*3,b=Buffer.alloc(44+n*2);b.write('RIFF');b.writeUInt32LE(36+n*2,4);b.write('WAVEfmt ',8);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(1,22);b.writeUInt32LE(rate,24);b.writeUInt32LE(rate*2,28);b.writeUInt16LE(2,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(n*2,40);for(let i=0;i<n;i++)b.writeInt16LE(Math.sin(i*440*2*Math.PI/rate)*1000,44+i*2);
  await page.locator('input[type=file]').setInputFiles({name:'Offline test.wav',mimeType:'audio/wav',buffer:b});
