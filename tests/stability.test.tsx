@@ -1,0 +1,9 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readStore} from '../src/model';
+import {request} from '../src/source-http';
+const data=new Map<string,string>();Object.defineProperty(globalThis,'localStorage',{value:{getItem:(k:string)=>data.get(k)??null,setItem:(k:string,v:string)=>data.set(k,v)},configurable:true});
+test('corrupt and wrong-shaped storage cannot crash the library and raw data is retained',()=>{data.set('volna.likes','{"bad":true}');assert.deepEqual(readStore('likes',[]),[]);assert.equal(data.get('volna.recovery.likes'),'{"bad":true}');data.set('volna.playlists','[null,{"id":"p","name":"Night","tracks":[null]}]');assert.deepEqual(readStore('playlists',[]),[{id:'p',name:'Night',tracks:[]}]);data.set('volna.energy','"false"');assert.equal(readStore('energy',false),false);});
+test('temporary catalog server failure is retried once',async()=>{let calls=0;globalThis.fetch=async()=>{calls++;return calls===1?new Response('',{status:503}):new Response('{"ok":true}');};assert.deepEqual(await request('https://example.com'),{ok:true});assert.equal(calls,2);});
+test('catalog outages are bounded and access/rate limits are not retried',async()=>{let calls=0;globalThis.fetch=async()=>{calls++;throw new TypeError('Network unavailable');};await assert.rejects(request('https://example.com'));assert.equal(calls,2);calls=0;globalThis.fetch=async()=>{calls++;return new Response('',{status:429});};await assert.rejects(request('https://example.com'),/ограничил/);assert.equal(calls,1);});
+test('already cancelled search never sends a network request',async()=>{let calls=0;globalThis.fetch=async()=>{calls++;return new Response('{}');};const c=new AbortController();c.abort();await assert.rejects(request('https://example.com',c.signal));assert.equal(calls,0);});

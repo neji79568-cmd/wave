@@ -32,6 +32,7 @@ const saved={version:1 as const,current:track,queue:[track,second],position:42,d
 const audio=()=>document.querySelector('audio')!;
 const clickPlay=()=>fireEvent.click(document.querySelector('.player .main-play')!);
 function reset(){cleanup();localStorage.clear();online=true;audioPlays=0;}
+test('rapid next clicks advance through the latest queue without replaying the same song',async()=>{reset();const third={...track,id:'au:third',title:'Third song',url:'https://example.com/third.mp3'};savePlaybackSession({...saved,shuffle:false,position:0,queue:[track,second,third]});render(<App/>);await act(async()=>{const next=document.querySelector('.player button[aria-label="Следующий трек"]')!;fireEvent.click(next);fireEvent.click(next);});await waitFor(()=>assert.equal(document.querySelector('.now-playing strong')?.textContent,'Third song'));reset();});
 
 test('session validation rejects unsafe sources and preserves archive tracks and finite preferences',()=>{
  reset();
