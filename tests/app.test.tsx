@@ -7,6 +7,12 @@ const dom=new JSDOM('<!doctype html><html><body></body></html>',{url:'http://loc
 for(const k of ['window','document','navigator','HTMLElement','HTMLMediaElement','HTMLInputElement','Event','KeyboardEvent','localStorage','MutationObserver','getComputedStyle'])Object.defineProperty(globalThis,k,{value:(dom.window as any)[k],configurable:true,writable:true});
 Object.defineProperty(globalThis,'indexedDB',{value:indexedDB});
 Object.defineProperty(globalThis,'IS_REACT_ACT_ENVIRONMENT',{value:true,writable:true});
+dom.window.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}} as any);
+globalThis.matchMedia=dom.window.matchMedia;
+globalThis.IntersectionObserver=class{observe(el:any){el.classList.add('is-revealed');}disconnect(){}unobserve(){}} as any;
+globalThis.ResizeObserver=class{observe(){}disconnect(){}} as any;
+globalThis.requestAnimationFrame=()=>0;globalThis.cancelAnimationFrame=()=>{};
+Object.defineProperty(dom.window.HTMLCanvasElement.prototype,'getContext',{value:()=>null});
 HTMLMediaElement.prototype.load=function(){};
 HTMLMediaElement.prototype.play=async function(){this.dispatchEvent(new Event('playing'));};
 HTMLMediaElement.prototype.pause=function(){this.dispatchEvent(new Event('pause'));};
@@ -17,8 +23,8 @@ const {default:userEvent}=await import('@testing-library/user-event');
 const {default:App}=await import('../src/App');
 test('real user flow: search, playback, next track, favorites, playlist and persisted library',async()=>{
  const user=userEvent.setup({document:dom.window.document});render(<App/>);
- await waitFor(()=>assert.ok(screen.getByRole('button',{name:'Слушать First song'})));
- await user.click(screen.getByRole('button',{name:'Слушать First song'}));
+ await waitFor(()=>assert.ok(screen.getAllByRole('button',{name:'Слушать First song'})[0]));
+ await user.click(screen.getAllByRole('button',{name:'Слушать First song'})[0]);
  await waitFor(()=>assert.ok(screen.getByRole('button',{name:'Пауза'})));
  await user.click(screen.getByRole('button',{name:'Следующий трек'}));
  await waitFor(()=>assert.equal(document.querySelector('.now-playing strong')?.textContent,'Second song'));
