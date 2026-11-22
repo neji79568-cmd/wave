@@ -1,15 +1,366 @@
-import {useState,type PointerEvent,type ReactNode} from 'react';
-import {Heart,Upload,Headphones,Play,Plus,Search,Music2,ListMusic,Disc3,FolderOpen,Sparkles} from 'lucide-react';
-import type {Track,Playlist} from './model';
-import {LogoMark} from './Logo';
-const count=(n:number)=>`${n} ${n%10===1&&n%100!==11?'трек':n%10>=2&&n%10<=4&&(n%100<12||n%100>14)?'трека':'треков'}`;
-function Art({kind,tracks}:{kind:'liked'|'files'|'history'|'playlist';tracks:Track[]}){return <div className={'portal-art art-'+kind} aria-hidden="true"><div className="portal-orbit orbit-back"/><div className="portal-orbit orbit-front"/><div className="portal-sigil">{kind==='liked'?<Heart fill="currentColor"/>:kind==='files'?<LogoMark/>:kind==='history'?<Headphones/>:<Disc3/>}</div><div className="portal-collage">{tracks.slice(0,3).map((t,i)=><span className={'collage-cover cover-'+i} key={t.id}>{t.artwork?<img src={t.artwork} alt="" loading="lazy" onError={e=>{e.currentTarget.style.opacity='0';}}/>:<Music2/>}</span>)}</div>{kind==='history'&&<div className="history-bars">{Array.from({length:22},(_,i)=><i key={i} style={{'--i':i,'--bar':`${15+((i*17)%53)}px`} as any}/>)}</div>}{kind==='files'&&<div className="file-formats"><span>MP3</span><span>WAV</span><span>M4A</span></div>}</div>;}
-type Props={likes:Track[];files:Track[];history:Track[];playlists:Playlist[];current:Track|null;importing:boolean;onOpen:(view:string)=>void;onSearch:()=>void;onCreate:()=>void;onImport:()=>void;onDrop:(files:FileList)=>void;onPlay:(track:Track,queue:Track[])=>void};
-export function LibraryHub(p:Props){const [filter,setFilter]=useState('all'),[query,setQuery]=useState(''),[dragging,setDragging]=useState(false);const saved=new Set([...p.likes,...p.files,...p.playlists.flatMap(l=>l.tracks)].map(t=>t.id)).size;const resume=p.current||p.history[0];
- const tilt=(e:PointerEvent<HTMLElement>)=>{if(e.pointerType==='touch'||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const r=e.currentTarget.getBoundingClientRect();e.currentTarget.style.setProperty('--tilt-x',`${((e.clientY-r.top)/r.height-.5)*-5}deg`);e.currentTarget.style.setProperty('--tilt-y',`${((e.clientX-r.left)/r.width-.5)*6}deg`);e.currentTarget.style.setProperty('--spot-x',`${(e.clientX-r.left)/r.width*100}%`);e.currentTarget.style.setProperty('--spot-y',`${(e.clientY-r.top)/r.height*100}%`);};
- const reset=(e:PointerEvent<HTMLElement>)=>{e.currentTarget.style.setProperty('--tilt-x','0deg');e.currentTarget.style.setProperty('--tilt-y','0deg');};
- const matches=(name:string,tracks:Track[])=>!query||[name,...tracks.map(t=>t.artist+' '+t.title)].join(' ').toLowerCase().includes(query.toLowerCase());
- function portal(kind:'liked'|'files'|'history',title:string,kicker:string,tracks:Track[],icon:ReactNode){const allowed=filter==='all'||filter===kind;if(!allowed||!matches(title,tracks))return null;return <article className={'library-portal portal-'+kind+(dragging&&kind==='files'?' drag-over':'')} key={kind} onPointerMove={tilt} onPointerLeave={reset} onDragOver={kind==='files'?e=>{e.preventDefault();setDragging(true);}:undefined} onDragLeave={kind==='files'?()=>setDragging(false):undefined} onDrop={kind==='files'?e=>{e.preventDefault();setDragging(false);p.onDrop(e.dataTransfer.files);}:undefined}><div className="portal-aura"/><button className="portal-open" aria-label={title} onClick={()=>p.onOpen(kind)}><span className="portal-kicker">{icon}{kicker}</span><Art kind={kind} tracks={tracks}/><span className="portal-copy"><strong>{title}</strong><span>{kind==='files'?count(tracks.length)+' · офлайн':count(tracks.length)}</span><small>{kind==='liked'?(tracks.length?'Треки, к которым хочется вернуться':'Одно сердечко — и песня здесь'):kind==='files'?'Свои песни. Всегда под рукой.':tracks.length?'Твоя история, без случайных потерь':'У каждой волны есть начало'}</small></span></button><div className="portal-actions">{kind==='files'?<button className="portal-action" disabled={p.importing} onClick={p.onImport}><Upload size={16}/>{p.importing?'Добавляем…':'Добавить файлы'}</button>:tracks.length?<button className="portal-action" onClick={()=>p.onPlay(tracks[0],tracks)}><Play size={15} fill="currentColor"/>{kind==='history'?'Продолжить':'Включить микс'}</button>:<button className="portal-action" onClick={p.onSearch}><Search size={15}/>Найти музыку</button>}<span className="portal-index">{kind==='files'?'LOCAL / AUDIO':kind==='liked'?'MADE BY YOU':'RECENT / REPLAY'}</span></div>{kind==='files'&&dragging&&<div className="drop-overlay"><Upload/><span>Отпусти, чтобы добавить</span></div>}</article>;}
- const cards=[portal('liked','Любимые треки','ТВОЯ ЛИЧНАЯ ЧАСТОТА',p.likes,<Heart size={15}/>),portal('files','Мои файлы','МУЗЫКА С ТОБОЙ',p.files,<FolderOpen size={15}/>),portal('history','Недавно слушал','ЕЩЁ ОДИН ПОВТОР',p.history,<Headphones size={15}/>)].filter(Boolean);const lists=(filter==='all'||filter==='playlists')?p.playlists.filter(l=>matches(l.name,l.tracks)):[];
- return <section className="library-hub"><div className="library-heading"><div><span className="eyebrow"><Sparkles size={13}/>ТВОЁ ЛИЧНОЕ ПРОСТРАНСТВО</span><h1>Моя библиотека<span>.</span></h1><p>Всё, что звучит в унисон с тобой.</p></div><button className="secondary" onClick={p.onCreate}><Plus size={18}/>Плейлист</button></div><div className="library-toolbar"><div className="library-filters" aria-label="Фильтры библиотеки">{[['all','Всё'],['liked','Избранное'],['files','На устройстве'],['playlists','Плейлисты']].map(([id,label])=><button key={id} aria-pressed={filter===id} className={filter===id?'chosen':''} onClick={()=>setFilter(id)}>{label}</button>)}</div><label className="library-search"><Search size={17}/><input aria-label="Поиск в библиотеке" placeholder="Найти в коллекции" value={query} onChange={e=>setQuery(e.target.value)}/></label></div><div className="library-portals">{cards}{lists.map((l,i)=><article className="library-portal portal-playlist" key={l.id} style={{'--playlist-hue':265+i%4*12} as any} onPointerMove={tilt} onPointerLeave={reset}><button className="portal-open" aria-label={'Открыть плейлист '+l.name} onClick={()=>p.onOpen('playlist:'+l.id)}><span className="portal-kicker"><ListMusic size={15}/>ТВОЙ ПЛЕЙЛИСТ</span><Art kind="playlist" tracks={l.tracks}/><span className="portal-copy"><strong>{l.name}</strong><span>{count(l.tracks.length)}</span><small>Собрано тобой. Звучит по-особенному.</small></span></button><div className="portal-actions"><button className="portal-action" disabled={!l.tracks.length} onClick={()=>l.tracks[0]&&p.onPlay(l.tracks[0],l.tracks)}><Play size={15} fill="currentColor"/>Слушать</button></div></article>)}</div>{!cards.length&&!lists.length&&<div className="library-empty"><LogoMark/><h2>{query?'В коллекции ничего не найдено':'Плейлист начинается с тебя'}</h2><p>{query?'Попробуй другое название песни или исполнителя.':'Собери треки для прогулки, ночного города или своего настроения.'}</p><button className="primary" onClick={query?()=>setQuery(''):p.onCreate}>{query?'Сбросить поиск':'Создать плейлист'}</button></div>}<div className="library-bottom"><div className="library-stat"><span>{saved}</span><div>В твоей коллекции<small>Избранное, файлы и плейлисты</small></div></div><div className="library-stat"><span>{p.playlists.length}</span><div>Твоих плейлистов<small>Под любое настроение</small></div></div><button className="library-resume" disabled={!resume} onClick={()=>resume&&p.onPlay(resume,p.current?[p.current,...p.history.filter(t=>t.id!==p.current?.id)]:p.history)}><span className="resume-play"><Play size={17} fill="currentColor"/></span><span><strong>Вернуться к музыке</strong><small>{resume?.title||'Включи свой первый трек'}</small></span></button></div><div className="library-privacy"><Music2 size={17}/><p>Твоя коллекция хранится в этом браузере. Добавленные файлы остаются на устройстве.</p></div></section>;
+import {
+  Disc3,
+  FolderOpen,
+  Headphones,
+  Heart,
+  ListMusic,
+  Music2,
+  Play,
+  Plus,
+  Search,
+  Sparkles,
+  Upload,
+} from 'lucide-react';
+import { useState, type PointerEvent, type ReactNode } from 'react';
+import { LogoMark } from './Logo';
+import type { Playlist, Track } from './model';
+const count = (n: number) =>
+  `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'трек' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'трека' : 'треков'}`;
+function Art({
+  kind,
+  tracks,
+}: {
+  kind: 'liked' | 'files' | 'history' | 'playlist';
+  tracks: Track[];
+}) {
+  return (
+    <div className={'portal-art art-' + kind} aria-hidden="true">
+      <div className="portal-orbit orbit-back" />
+      <div className="portal-orbit orbit-front" />
+      <div className="portal-sigil">
+        {kind === 'liked' ? (
+          <Heart fill="currentColor" />
+        ) : kind === 'files' ? (
+          <LogoMark />
+        ) : kind === 'history' ? (
+          <Headphones />
+        ) : (
+          <Disc3 />
+        )}
+      </div>
+      <div className="portal-collage">
+        {tracks.slice(0, 3).map((t, i) => (
+          <span className={'collage-cover cover-' + i} key={t.id}>
+            {t.artwork ? (
+              <img
+                src={t.artwork}
+                alt=""
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.style.opacity = '0';
+                }}
+              />
+            ) : (
+              <Music2 />
+            )}
+          </span>
+        ))}
+      </div>
+      {kind === 'history' && (
+        <div className="history-bars">
+          {Array.from({ length: 22 }, (_, i) => (
+            <i key={i} style={{ '--i': i, '--bar': `${15 + ((i * 17) % 53)}px` } as any} />
+          ))}
+        </div>
+      )}
+      {kind === 'files' && (
+        <div className="file-formats">
+          <span>MP3</span>
+          <span>WAV</span>
+          <span>M4A</span>
+        </div>
+      )}
+    </div>
+  );
+}
+type Props = {
+  likes: Track[];
+  files: Track[];
+  history: Track[];
+  playlists: Playlist[];
+  current: Track | null;
+  importing: boolean;
+  onOpen: (view: string) => void;
+  onSearch: () => void;
+  onCreate: () => void;
+  onImport: () => void;
+  onDrop: (files: FileList) => void;
+  onPlay: (track: Track, queue: Track[]) => void;
+};
+export function LibraryHub(p: Props) {
+  const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
+  const [dragging, setDragging] = useState(false);
+  const saved = new Set(
+    [...p.likes, ...p.files, ...p.playlists.flatMap((l) => l.tracks)].map((t) => t.id),
+  ).size;
+  const resume = p.current || p.history[0];
+  const tilt = (e: PointerEvent<HTMLElement>) => {
+    if (e.pointerType === 'touch' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty(
+      '--tilt-x',
+      `${((e.clientY - r.top) / r.height - 0.5) * -5}deg`,
+    );
+    e.currentTarget.style.setProperty(
+      '--tilt-y',
+      `${((e.clientX - r.left) / r.width - 0.5) * 6}deg`,
+    );
+    e.currentTarget.style.setProperty('--spot-x', `${((e.clientX - r.left) / r.width) * 100}%`);
+    e.currentTarget.style.setProperty('--spot-y', `${((e.clientY - r.top) / r.height) * 100}%`);
+  };
+  const reset = (e: PointerEvent<HTMLElement>) => {
+    e.currentTarget.style.setProperty('--tilt-x', '0deg');
+    e.currentTarget.style.setProperty('--tilt-y', '0deg');
+  };
+  const matches = (name: string, tracks: Track[]) =>
+    !query ||
+    [name, ...tracks.map((t) => t.artist + ' ' + t.title)]
+      .join(' ')
+      .toLowerCase()
+      .includes(query.toLowerCase());
+  function portal(
+    kind: 'liked' | 'files' | 'history',
+    title: string,
+    kicker: string,
+    tracks: Track[],
+    icon: ReactNode,
+  ) {
+    const allowed = filter === 'all' || filter === kind;
+    if (!allowed || !matches(title, tracks)) return null;
+    return (
+      <article
+        className={
+          'library-portal portal-' + kind + (dragging && kind === 'files' ? ' drag-over' : '')
+        }
+        key={kind}
+        onPointerMove={tilt}
+        onPointerLeave={reset}
+        onDragOver={
+          kind === 'files'
+            ? (e) => {
+                e.preventDefault();
+                setDragging(true);
+              }
+            : undefined
+        }
+        onDragLeave={kind === 'files' ? () => setDragging(false) : undefined}
+        onDrop={
+          kind === 'files'
+            ? (e) => {
+                e.preventDefault();
+                setDragging(false);
+                p.onDrop(e.dataTransfer.files);
+              }
+            : undefined
+        }
+      >
+        <div className="portal-aura" />
+        <button className="portal-open" aria-label={title} onClick={() => p.onOpen(kind)}>
+          <span className="portal-kicker">
+            {icon}
+            {kicker}
+          </span>
+          <Art kind={kind} tracks={tracks} />
+          <span className="portal-copy">
+            <strong>{title}</strong>
+            <span>
+              {kind === 'files' ? count(tracks.length) + ' · офлайн' : count(tracks.length)}
+            </span>
+            <small>
+              {kind === 'liked'
+                ? tracks.length
+                  ? 'Треки, к которым хочется вернуться'
+                  : 'Одно сердечко — и песня здесь'
+                : kind === 'files'
+                  ? 'Свои песни. Всегда под рукой.'
+                  : tracks.length
+                    ? 'Твоя история, без случайных потерь'
+                    : 'У каждой волны есть начало'}
+            </small>
+          </span>
+        </button>
+        <div className="portal-actions">
+          {kind === 'files' ? (
+            <button className="portal-action" disabled={p.importing} onClick={p.onImport}>
+              <Upload size={16} />
+              {p.importing ? 'Добавляем…' : 'Добавить файлы'}
+            </button>
+          ) : tracks.length ? (
+            <button className="portal-action" onClick={() => p.onPlay(tracks[0], tracks)}>
+              <Play size={15} fill="currentColor" />
+              {kind === 'history' ? 'Продолжить' : 'Включить микс'}
+            </button>
+          ) : (
+            <button className="portal-action" onClick={p.onSearch}>
+              <Search size={15} />
+              Найти музыку
+            </button>
+          )}
+          <span className="portal-index">
+            {kind === 'files'
+              ? 'LOCAL / AUDIO'
+              : kind === 'liked'
+                ? 'MADE BY YOU'
+                : 'RECENT / REPLAY'}
+          </span>
+        </div>
+        {kind === 'files' && dragging && (
+          <div className="drop-overlay">
+            <Upload />
+            <span>Отпусти, чтобы добавить</span>
+          </div>
+        )}
+      </article>
+    );
+  }
+  const cards = [
+    portal('liked', 'Любимые треки', 'ТВОЯ ЛИЧНАЯ ЧАСТОТА', p.likes, <Heart size={15} />),
+    portal('files', 'Мои файлы', 'МУЗЫКА С ТОБОЙ', p.files, <FolderOpen size={15} />),
+    portal('history', 'Недавно слушал', 'ЕЩЁ ОДИН ПОВТОР', p.history, <Headphones size={15} />),
+  ].filter(Boolean);
+  const lists =
+    filter === 'all' || filter === 'playlists'
+      ? p.playlists.filter((l) => matches(l.name, l.tracks))
+      : [];
+  return (
+    <section className="library-hub">
+      <div className="library-heading">
+        <div>
+          <span className="eyebrow">
+            <Sparkles size={13} />
+            ТВОЁ ЛИЧНОЕ ПРОСТРАНСТВО
+          </span>
+          <h1>
+            Моя библиотека<span>.</span>
+          </h1>
+          <p>Всё, что звучит в унисон с тобой.</p>
+        </div>
+        <button className="secondary" onClick={p.onCreate}>
+          <Plus size={18} />
+          Плейлист
+        </button>
+      </div>
+      <div className="library-toolbar">
+        <div className="library-filters" aria-label="Фильтры библиотеки">
+          {[
+            ['all', 'Всё'],
+            ['liked', 'Избранное'],
+            ['files', 'На устройстве'],
+            ['playlists', 'Плейлисты'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              aria-pressed={filter === id}
+              className={filter === id ? 'chosen' : ''}
+              onClick={() => setFilter(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <label className="library-search">
+          <Search size={17} />
+          <input
+            aria-label="Поиск в библиотеке"
+            placeholder="Найти в коллекции"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+      </div>
+      <div className="library-portals">
+        {cards}
+        {lists.map((l, i) => (
+          <article
+            className="library-portal portal-playlist"
+            key={l.id}
+            style={{ '--playlist-hue': 265 + (i % 4) * 12 } as any}
+            onPointerMove={tilt}
+            onPointerLeave={reset}
+          >
+            <button
+              className="portal-open"
+              aria-label={'Открыть плейлист ' + l.name}
+              onClick={() => p.onOpen('playlist:' + l.id)}
+            >
+              <span className="portal-kicker">
+                <ListMusic size={15} />
+                ТВОЙ ПЛЕЙЛИСТ
+              </span>
+              <Art kind="playlist" tracks={l.tracks} />
+              <span className="portal-copy">
+                <strong>{l.name}</strong>
+                <span>{count(l.tracks.length)}</span>
+                <small>Собрано тобой. Звучит по-особенному.</small>
+              </span>
+            </button>
+            <div className="portal-actions">
+              <button
+                className="portal-action"
+                disabled={!l.tracks.length}
+                onClick={() => l.tracks[0] && p.onPlay(l.tracks[0], l.tracks)}
+              >
+                <Play size={15} fill="currentColor" />
+                Слушать
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+      {!cards.length && !lists.length && (
+        <div className="library-empty">
+          <LogoMark />
+          <h2>{query ? 'В коллекции ничего не найдено' : 'Плейлист начинается с тебя'}</h2>
+          <p>
+            {query
+              ? 'Попробуй другое название песни или исполнителя.'
+              : 'Собери треки для прогулки, ночного города или своего настроения.'}
+          </p>
+          <button className="primary" onClick={query ? () => setQuery('') : p.onCreate}>
+            {query ? 'Сбросить поиск' : 'Создать плейлист'}
+          </button>
+        </div>
+      )}
+      <div className="library-bottom">
+        <div className="library-stat">
+          <span>{saved}</span>
+          <div>
+            В твоей коллекции<small>Избранное, файлы и плейлисты</small>
+          </div>
+        </div>
+        <div className="library-stat">
+          <span>{p.playlists.length}</span>
+          <div>
+            Твоих плейлистов<small>Под любое настроение</small>
+          </div>
+        </div>
+        <button
+          className="library-resume"
+          disabled={!resume}
+          onClick={() =>
+            resume &&
+            p.onPlay(
+              resume,
+              p.current
+                ? [p.current, ...p.history.filter((t) => t.id !== p.current?.id)]
+                : p.history,
+            )
+          }
+        >
+          <span className="resume-play">
+            <Play size={17} fill="currentColor" />
+          </span>
+          <span>
+            <strong>Вернуться к музыке</strong>
+            <small>{resume?.title || 'Включи свой первый трек'}</small>
+          </span>
+        </button>
+      </div>
+      <div className="library-privacy">
+        <Music2 size={17} />
+        <p>Твоя коллекция хранится в этом браузере. Добавленные файлы остаются на устройстве.</p>
+      </div>
+    </section>
+  );
 }

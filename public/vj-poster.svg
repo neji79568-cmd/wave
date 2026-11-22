@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540"><defs><radialGradient id="g"><stop stop-color="#482268"/><stop offset="1" stop-color="#100719"/></radialGradient></defs><path fill="url(#g)" d="M0 0h960v540H0z"/><g fill="none" stroke="#b275ed" opacity=".4"><path d="M0 270C260 60 450 480 960 240"/><path d="M0 285C260 85 450 460 960 260"/><path d="M0 300C260 110 450 440 960 280"/><path d="M0 315C260 135 450 420 960 300"/><path d="M0 330C260 160 450 400 960 320"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <defs>
+    <radialGradient id="g">
+      <stop stop-color="#482268" />
+      <stop offset="1" stop-color="#100719" />
+    </radialGradient>
+  </defs>
+  <path fill="url(#g)" d="M0 0h960v540H0z" />
+  <g fill="none" stroke="#b275ed" opacity=".4">
+    <path d="M0 270C260 60 450 480 960 240" />
+    <path d="M0 285C260 85 450 460 960 260" />
+    <path d="M0 300C260 110 450 440 960 280" />
+    <path d="M0 315C260 135 450 420 960 300" />
+    <path d="M0 330C260 160 450 400 960 320" />
+  </g>
+</svg>

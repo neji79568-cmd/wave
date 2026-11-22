@@ -1,0 +1,8 @@
+node_modules/
+dist/
+qa/
+.git/
+.site-state/
+package-lock.json
+*.tsbuildinfo
+*.tar.gz

@@ -1,7 +1,54 @@
-import {useEffect} from 'react';
-export function useMotion(view:string){
- useEffect(()=>{const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-revealed');observer.unobserve(e.target);}}),{threshold:.08});document.querySelectorAll('.music-section,.discovery-section,.artist-strip,.hero,.browse-card,.library-card').forEach((el,i)=>{el.classList.add('reveal');(el as HTMLElement).style.setProperty('--reveal-delay',`${Math.min(i%6,3)*55}ms`);observer.observe(el);});
- let raf=0;const scroll=()=>{if(raf)return;raf=requestAnimationFrame(()=>{document.documentElement.style.setProperty('--scroll',String(Math.min(scrollY/600,1)));raf=0;});};window.addEventListener('scroll',scroll,{passive:true});scroll();
- const tap=(e:PointerEvent)=>{if(reduced.matches||document.documentElement.dataset.energy==='true')return;const button=(e.target as HTMLElement)?.closest('button');if(!button||button.disabled)return;const rect=button.getBoundingClientRect(),ripple=document.createElement('span');ripple.className='tap-ripple';ripple.style.left=`${e.clientX-rect.left}px`;ripple.style.top=`${e.clientY-rect.top}px`;button.appendChild(ripple);ripple.addEventListener('animationend',()=>ripple.remove(),{once:true});};document.addEventListener('pointerdown',tap);
- return()=>{observer.disconnect();cancelAnimationFrame(raf);window.removeEventListener('scroll',scroll);document.removeEventListener('pointerdown',tap);};},[view]);
+import { useEffect } from 'react';
+export function useMotion(view: string) {
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const observer = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-revealed');
+            observer.unobserve(e.target);
+          }
+        }),
+      { threshold: 0.08 },
+    );
+    document
+      .querySelectorAll(
+        '.music-section,.discovery-section,.artist-strip,.hero,.browse-card,.library-card',
+      )
+      .forEach((el, i) => {
+        el.classList.add('reveal');
+        (el as HTMLElement).style.setProperty('--reveal-delay', `${Math.min(i % 6, 3) * 55}ms`);
+        observer.observe(el);
+      });
+    let raf = 0;
+    const scroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        document.documentElement.style.setProperty('--scroll', String(Math.min(scrollY / 600, 1)));
+        raf = 0;
+      });
+    };
+    window.addEventListener('scroll', scroll, { passive: true });
+    scroll();
+    const tap = (e: PointerEvent) => {
+      if (reduced.matches || document.documentElement.dataset.energy === 'true') return;
+      const button = (e.target as HTMLElement)?.closest('button');
+      if (!button || button.disabled) return;
+      const rect = button.getBoundingClientRect();
+      const ripple = document.createElement('span');
+      ripple.className = 'tap-ripple';
+      ripple.style.left = `${e.clientX - rect.left}px`;
+      ripple.style.top = `${e.clientY - rect.top}px`;
+      button.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+    };
+    document.addEventListener('pointerdown', tap);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', scroll);
+      document.removeEventListener('pointerdown', tap);
+    };
+  }, [view]);
 }
